@@ -21,7 +21,9 @@
  */
 
 import { mergeEnvLayers } from "../server/legacy-env.ts";
+import { DeviceStore } from "../server/devices.ts";
 import { adoptMooEnv, herdrBin } from "../server/moo-env.ts";
+import { lanEnableRefusal, NetworkStore } from "../server/network.ts";
 import { defaultStateDir } from "../server/update-state.ts";
 import { spawn, spawnSync } from "node:child_process";
 import { appendFileSync, chmodSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -341,6 +343,42 @@ function autostart(setting: string | undefined): number {
   }
   const off = autostartOff();
   process.stdout.write(off === null ? "autostart on: Ovis starts with moo\n" : `autostart off by ${off}: Ovis starts only when asked (\`start\`)\n`);
+  return 0;
+}
+
+/**
+ * `network local|lan` sets who may reach the app (server/network.ts) and, when it is running,
+ * restarts it so the change takes effect. The app's own Settings switch changes the same stored
+ * mode without a restart.
+ */
+async function network(setting: string | undefined): Promise<number> {
+  const store = new NetworkStore(APP_STATE_DIR);
+  if (setting === "local" || setting === "lan") {
+    if (setting === "lan") {
+      const blocked = lanEnableRefusal({ tokenConfigured: (env["OVIS_TOKEN"] ?? "") !== "", gated: new DeviceStore(APP_STATE_DIR).gated });
+      if (blocked !== null) {
+        process.stderr.write(`${blocked}\n`);
+        return 1;
+      }
+    }
+    if (setting !== store.mode) {
+      store.set(setting);
+      if (await health()) {
+        const stopped = await stop();
+        if (stopped !== 0) return stopped;
+        const started = await start();
+        if (started !== 0) return started;
+      }
+    }
+  } else if (setting !== undefined && setting !== "status") {
+    process.stderr.write("usage: bun scripts/plugin.ts network [local|lan|status]\n");
+    return 2;
+  }
+  const lan = store.mode === "lan";
+  const host = env["HOST"];
+  process.stdout.write(host
+    ? `network ${store.mode}, but HOST=${host} decides where Ovis listens; remove it to use the setting\n`
+    : lan ? "network lan: answers this PC and the local network only\n" : "network local: answers this PC only\n");
   return 0;
 }
 
@@ -714,13 +752,14 @@ if (import.meta.main) {
     process.exit(0);
   } else if (command === "start") process.exit(await start());
   else if (command === "autostart") process.exit(autostart(process.argv[3]));
+  else if (command === "network") process.exit(await network(process.argv[3]));
   else if (command === "stop") process.exit(await stop());
   else if (command === "status") process.exit(await status());
   else if (command === "pair") process.exit(await pair());
   else if (command === "phone") process.exit(await phone());
   else if (command === "phone-setup") process.exit(await phoneSetup());
   else {
-    process.stderr.write(`usage: bun scripts/plugin.ts <start|stop|status|autostart|pair|phone|phone-setup>\n`);
+    process.stderr.write(`usage: bun scripts/plugin.ts <start|stop|status|autostart|network|pair|phone|phone-setup>\n`);
     process.exit(2);
   }
 }

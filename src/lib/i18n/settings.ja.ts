@@ -1,7 +1,7 @@
 /**
  * Japanese for the keys only the settings files use:
  * components/SettingsDialog.tsx (with THEME_NAMES), components/KeyBarSettings.tsx,
- * components/SettingsControls.tsx, components/TelemetryControls.tsx, lib/paletteSettings.ts.
+ * components/SettingsControls.tsx, components/NetworkPanel.tsx, components/TelemetryControls.tsx, lib/paletteSettings.ts.
  * Register and fixed terms follow ../i18n.ja.ts; a key another feature also uses goes there.
  */
 export const SETTINGS_JA: Record<string, string> = {
@@ -286,4 +286,10 @@ export const SETTINGS_JA: Record<string, string> = {
   "Increase interface font size": "インターフェースの文字サイズを大きく",
   "This is the demo. Go back to the app's list of PCs to open yours.": "これはデモです。アプリのPC一覧に戻って、ご自分のPCを開いてください。",
   "This app shows {address}. Go back to its list of PCs to open another.": "このアプリは {address} を表示しています。PC一覧に戻ると別のPCを開けます。",
+  "Network access": "ネットワークアクセス",
+  "This PC only": "この PC のみ",
+  "Local network": "ローカルネットワーク",
+  "Only this PC can open Ovis. Other devices on the network cannot.": "この PC からのみ Ovis を開けます。ネットワーク上の他のデバイスは開けません。",
+  "This PC and devices on your local network can open Ovis. Connections from anywhere else are refused.": "この PC とローカルネットワーク上のデバイスから Ovis を開けます。それ以外からの接続は拒否されます。",
+  "HOST is set for this server, so it decides where Ovis listens.": "このサーバーでは HOST が設定されているため、Ovis の待ち受け先は HOST で決まります。"
 };

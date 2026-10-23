@@ -137,6 +137,8 @@ describe.skipIf(process.platform === "win32")("Unix Bun discovery", () => {
       ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "status"],
       ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "autostart", "off"],
       ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "autostart", "on"],
+      ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "network", "local"],
+      ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "network", "lan"],
       ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "phone-setup"],
     ]);
     for (const command of commands) {

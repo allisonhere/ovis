@@ -34,6 +34,7 @@ import type { VoiceStatus } from "../../shared/voice.ts";
 import { dictationLocale, VOICE_CONFIG_EVENT } from "../lib/voice.ts";
 import { DevicesPanel } from "./DevicesPanel.tsx";
 import { ConfirmDialog } from "./ConfirmDialog.tsx";
+import { NetworkPanel } from "./NetworkPanel.tsx";
 import { PhonePanel } from "./PhonePanel.tsx";
 import { PortalPanel } from "./PortalPanel.tsx";
 import { copyText } from "../lib/clipboard.ts";
@@ -876,6 +877,7 @@ function DevicesPage({ auth, onSignOut }: { auth: HealthAuth | null; onSignOut: 
           </SettingsRow>
         )}
         <div className="settings-item"><PhonePanel plan={plan} loading={access === undefined} onRefresh={loadAccess} /></div>
+        <NetworkPanel readOnly={auth?.role === "watch"} />
         <SettingsRow label={t("Keep screen on")} description={<>{t("While a terminal or chat pane is open.")}{wakeLockProblem !== null && <span className="settings-condition">{wakeLockProblem}</span>}</>}>
           <Toggle label={t("Keep screen on")} checked={settings.keepScreenOn} onChange={(keepScreenOn) => update({ keepScreenOn })} />
         </SettingsRow>

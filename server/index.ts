@@ -17,6 +17,7 @@ import { DEFAULT_PORT } from "../shared/protocol.ts";
 import { authClient, deviceCookieValue, bearerMatches, handleAuthRequest, isAuthenticated, isSecureRequest, parseCookies, presentedToken, presentedTokenHeld, recordPresentedTokenFailure, requiresAuth, unauthorizedJson } from "./auth.ts";
 import { cameThroughProxy, decideAccess, isLoopbackAddress, isLoopbackBind, isServeOwnerRequest, lanExposed } from "./access.ts";
 import { DeviceStore, handleDeviceRequest, type DeviceMatch } from "./devices.ts";
+import { bindHostname, handleNetworkRequest, lanGateRefuses, lanOnly, NetworkStore, type NetworkContext } from "./network.ts";
 import { handlePreferencesRequest, PreferenceStore } from "./preferences.ts";
 import { handleSeenRequest, SeenStore } from "./seen.ts";
 import { remoteAccess, TailnetIdentitySource } from "./tailscale.ts";
@@ -223,7 +224,11 @@ export function createServer(
    */
   const bootId = process.env["OVIS_BOOT_ID"] || randomUUID();
   const orderSequence = new OrderSequence(bootId);
-  const hostname = options.hostname ?? process.env["HOST"] ?? "127.0.0.1";
+  /** HOST as given; when it is set it decides where to listen, and the network mode (server/network.ts) does not */
+  const envHost = options.hostname ?? process.env["HOST"];
+  const network = new NetworkStore(options.stateDir ?? defaultStateDir());
+  /** where the server listens now: the network mode can change it while the server runs */
+  let hostname = bindHostname(envHost, network.mode);
   /** Empty token = gate disabled; every route then behaves exactly as it did before auth existed. */
   const token = options.token ?? process.env["OVIS_TOKEN"] ?? "";
   /** paired devices (server/devices.ts) and the PC's Tailscale login: the two ways in besides the token and this PC itself */
@@ -271,13 +276,27 @@ export function createServer(
 
   const envPort = process.env["PORT"];
   const clientConnectionLog = new ClientConnectionLog();
-  const server = Bun.serve<SocketData>({
-    port: options.port ?? (envPort ? Number(envPort) : DEFAULT_PORT),
-    hostname,
+  const networkContext: NetworkContext = {
+    store: network,
+    envHost,
+    bound: () => hostname,
+    tokenConfigured: token !== "",
+    gated: () => devices.gated,
+    // after this response has gone out: stopping the listener closes the connection it travels on
+    apply: () => { setTimeout(() => void rebind(), 150); },
+  };
+  const listen = (address: string, port: number) => Bun.serve<SocketData>({
+    port,
+    hostname: address,
     maxRequestBodySize: BUN_BODY_CEILING,
 
     async fetch(request, bunServer) {
       return requestLog.handle(request, async (headers) => {
+      // network mode "lan": the connection's own address must be on this PC or its local network, whatever the headers say
+      if (lanGateRefuses(lanOnly(envHost, network.mode), bunServer.requestIP(request)?.address ?? null)) {
+        setRequestRoute("lan-refusal");
+        return new Response("Ovis answers only on the local network.\n", { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } });
+      }
       const startup = portalStartupResult ?? await portalStartup;
       if (!startup.ok) {
         setRequestRoute("startup");
@@ -428,6 +447,10 @@ export function createServer(
           forgetPageMedia({ client });
         }
         return handleAuthRequest(request, token, client);
+      }
+      if (pathname === "/api/network") {
+        setRequestRoute(pathname);
+        return handleNetworkRequest(request, access, networkContext);
       }
       if (pathname === "/api/devices" || pathname.startsWith("/api/devices/")) {
         try {
@@ -639,6 +662,30 @@ export function createServer(
 
     websocket: core.websocket,
   });
+  let server = listen(hostname, options.port ?? (envPort ? Number(envPort) : DEFAULT_PORT));
+
+  /**
+   * Listen again where the stored network mode says, on the same port. Application state is
+   * untouched; open connections drop and their clients reconnect. If the new address cannot be
+   * bound the mode is put back and the old address is restored.
+   */
+  async function rebind(): Promise<void> {
+    const next = bindHostname(envHost, network.mode);
+    if (next === hostname) return;
+    const previous = hostname;
+    const port = server.port ?? DEFAULT_PORT;
+    await server.stop(true);
+    try {
+      hostname = next;
+      server = listen(next, port);
+    } catch (error) {
+      console.error(`Cannot listen on ${next}:${port} (${(error as Error).message}); staying on ${previous}`);
+      hostname = previous;
+      network.set(network.mode === "lan" ? "local" : "lan");
+      server = listen(previous, port);
+    }
+    console.log(`Ovis listening on http://${hostname}:${server.port}`);
+  }
 
   const requestLog = new RequestLog(options.stateDir ?? defaultStateDir());
 
@@ -664,8 +711,8 @@ export function createServer(
   core.start();
 
   return {
-    port: server.port ?? 0,
-    hostname,
+    get port() { return server.port ?? 0; },
+    get hostname() { return hostname; },
     statusReady: collector.ready,
     /** a create request's first message for a pane's agent, as the create routes queue it (server/core/pending.ts); for tests that run no agent */
     queueFirstMessage,

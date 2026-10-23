@@ -1,7 +1,7 @@
 /**
  * Korean for the keys only the settings files use:
  * components/SettingsDialog.tsx (with THEME_NAMES), components/KeyBarSettings.tsx,
- * components/SettingsControls.tsx, components/TelemetryControls.tsx, lib/paletteSettings.ts.
+ * components/SettingsControls.tsx, components/NetworkPanel.tsx, components/TelemetryControls.tsx, lib/paletteSettings.ts.
  * Register and fixed terms follow ../i18n.ko.ts; a key another feature also uses goes there.
  */
 export const SETTINGS_KO: Record<string, string> = {
@@ -286,4 +286,10 @@ export const SETTINGS_KO: Record<string, string> = {
   "Increase interface font size": "인터페이스 글자 크기 키우기",
   "This is the demo. Go back to the app's list of PCs to open yours.": "데모 화면입니다. 앱의 PC 목록으로 돌아가 내 PC를 여세요.",
   "This app shows {address}. Go back to its list of PCs to open another.": "이 앱은 {address}를 보여 주고 있습니다. PC 목록으로 돌아가 다른 PC를 열 수 있습니다.",
+  "Network access": "네트워크 접근",
+  "This PC only": "이 PC만",
+  "Local network": "로컬 네트워크",
+  "Only this PC can open Ovis. Other devices on the network cannot.": "이 PC에서만 Ovis를 열 수 있습니다. 네트워크의 다른 기기는 열 수 없습니다.",
+  "This PC and devices on your local network can open Ovis. Connections from anywhere else are refused.": "이 PC와 로컬 네트워크의 기기에서 Ovis를 열 수 있습니다. 그 밖의 연결은 거부됩니다.",
+  "HOST is set for this server, so it decides where Ovis listens.": "이 서버에는 HOST가 설정되어 있어 Ovis가 수신하는 주소는 HOST가 결정합니다."
 };

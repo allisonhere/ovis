@@ -368,3 +368,43 @@ describe("autostart", () => {
     expect(bad.exitCode).toBe(2);
   });
 });
+
+describe("network", () => {
+  // PORT=1 is closed, so nothing here finds a running app to restart
+  const options = (extra: Record<string, string> = {}) => ({ PORT: "1", OVIS_STATE_DIR: join(scratch, "app"), ...extra });
+  const stored = () => join(scratch, "app", "network.json");
+
+  it("is local until it is switched, and says so", async () => {
+    const status = await run(["network", "status"], options());
+    expect(status.exitCode, status.err).toBe(0);
+    expect(status.out).toContain("network local");
+    expect(existsSync(stored())).toBe(false);
+  });
+
+  it("will not open the local network while nothing would gate it", async () => {
+    const refused = await run(["network", "lan"], options());
+    expect(refused.exitCode).toBe(1);
+    expect(refused.err).toContain("OVIS_TOKEN");
+    expect(existsSync(stored())).toBe(false);
+  });
+
+  it("switches to the local network with a token set, and back", async () => {
+    const lan = await run(["network", "lan"], options({ OVIS_TOKEN: "secret" }));
+    expect(lan.exitCode, lan.err).toBe(0);
+    expect(lan.out).toContain("network lan");
+    expect(JSON.parse(readFileSync(stored(), "utf8"))).toEqual({ mode: "lan" });
+    expect((await run(["network", "status"], options())).out).toContain("network lan");
+    const local = await run(["network", "local"], options());
+    expect(local.out).toContain("network local");
+    expect(JSON.parse(readFileSync(stored(), "utf8"))).toEqual({ mode: "local" });
+  });
+
+  it("says when an explicit HOST decides instead", async () => {
+    const run1 = await run(["network", "status"], options({ HOST: "0.0.0.0" }));
+    expect(run1.out).toContain("HOST=0.0.0.0 decides");
+  });
+
+  it("rejects an unknown setting", async () => {
+    expect((await run(["network", "everywhere"], options())).exitCode).toBe(2);
+  });
+});

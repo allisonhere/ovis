@@ -415,6 +415,21 @@ export type AccessRefusal = "other_user" | "pairing_required" | "token_required"
 export type DeviceRole = "drive" | "watch";
 
 /** GET /api/health `auth`: `authenticated` is whether this request got in; `required` is the opposite, kept for older clients. */
+/** Who may open the server: this PC only, or this PC and its local network (server/network.ts). */
+export type NetworkMode = "local" | "lan";
+/** GET/POST /api/network */
+export interface NetworkStatus {
+  mode: NetworkMode;
+  /** the address the server listens on now; it follows `mode` a moment after a change */
+  bound: string;
+  /** the local-network filter is in force: `mode` is lan and no explicit HOST replaces it */
+  lan_only: boolean;
+  /** HOST decides where the server listens, so `mode` has no effect */
+  host_set: boolean;
+  /** why the local network cannot be turned on yet (nothing would gate it), or null */
+  lan_blocked: string | null;
+}
+
 export interface HealthAuth {
   readonly required: boolean;
   readonly authenticated: boolean;

@@ -1,7 +1,7 @@
 /**
  * Simplified Chinese for the keys only the settings files use:
  * components/SettingsDialog.tsx (with THEME_NAMES), components/KeyBarSettings.tsx,
- * components/SettingsControls.tsx, components/TelemetryControls.tsx, lib/paletteSettings.ts.
+ * components/SettingsControls.tsx, components/NetworkPanel.tsx, components/TelemetryControls.tsx, lib/paletteSettings.ts.
  * Register and fixed terms follow ../i18n.zh.ts; a key another feature also uses goes there.
  */
 export const SETTINGS_ZH: Record<string, string> = {
@@ -286,4 +286,10 @@ export const SETTINGS_ZH: Record<string, string> = {
   "Increase interface font size": "增大界面字号",
   "This is the demo. Go back to the app's list of PCs to open yours.": "这是演示。回到应用的电脑列表即可打开你自己的电脑。",
   "This app shows {address}. Go back to its list of PCs to open another.": "此应用正在显示 {address}。回到电脑列表可打开其他电脑。",
+  "Network access": "网络访问",
+  "This PC only": "仅此电脑",
+  "Local network": "本地网络",
+  "Only this PC can open Ovis. Other devices on the network cannot.": "只有这台电脑可以打开 Ovis，网络上的其他设备不能。",
+  "This PC and devices on your local network can open Ovis. Connections from anywhere else are refused.": "这台电脑和本地网络中的设备可以打开 Ovis，来自其他位置的连接会被拒绝。",
+  "HOST is set for this server, so it decides where Ovis listens.": "此服务器设置了 HOST，因此 Ovis 的监听地址由 HOST 决定。"
 };

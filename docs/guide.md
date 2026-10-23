@@ -367,6 +367,15 @@ A token is a credential on the wire as much as a cookie is: on plain `http://`, 
 
 The pairing code is a one-time secret: five wrong tries spend it.
 
+### Network access (moo build)
+
+In the moo build, **Settings → Phone & devices → Network access** picks who can open the app without editing `HOST`:
+
+- **This PC only** (the default) listens on `127.0.0.1`.
+- **Local network** listens on every interface but answers only connections from this PC or a private address: `127/8`, `10/8`, `172.16/12`, `192.168/16`, `169.254/16`, and IPv6 loopback, unique-local (`fc00::/7`) and link-local (`fe80::/10`). Any other peer gets a 403, including a forwarded router port, a public interface and a Tailscale address used directly. The check uses the connection's own address, never a header.
+
+It switches at once without a restart; open connections drop and reconnect. Local network will not turn on until `OVIS_TOKEN` is set or a device is paired, so the usual rules above still decide who gets in. The same switch is `bun scripts/plugin.ts network local|lan|status`, or the plugin actions `network-local` and `network-lan`. An explicit `HOST` overrides the setting. The filter is in the app, not the network: keep a firewall in front of a PC that is reachable from the internet.
+
 ### Behind a reverse proxy
 
 **Set a token first** (`OVIS_TOKEN`). A proxy on this PC connects from this PC, so the server knows a proxied request only by what the proxy sends: an `X-Forwarded-For` header (or another forwarding header), or a `Host` that is not `localhost` or `127.0.0.1`. A proxy that sends neither makes every visitor count as this computer: they get in with nothing, and pairing a device does not close it. nginx's plain `proxy_pass` is such a proxy. With a token set, every visitor needs the token whatever the proxy sends.
@@ -481,7 +490,7 @@ Each `OVIS_*` variable was called `HERDR_WEB_*` before Ovis took its name (`OVIS
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `HOST` | `127.0.0.1` | Bind address. Use `0.0.0.0` or a LAN address only with `OVIS_TOKEN` set or once a device is paired: until then that address is open to anyone who reaches it (see [Access and safety](#access-and-safety)). |
+| `HOST` | `127.0.0.1` | Bind address. Use `0.0.0.0` or a LAN address only with `OVIS_TOKEN` set or once a device is paired: until then that address is open to anyone who reaches it (see [Access and safety](#access-and-safety)). When set, it overrides the **Network access** setting (moo build). |
 | `PORT` | `7317` | HTTP and WebSocket port. Left unset, the plugin takes the next of 17317, 27317, 37317 and 47317 when 7317 cannot be opened (another program has it, or Windows reserves it for Hyper-V, WSL2 or Docker), keeps that port for later starts, and the installer and the **Ovis status** action print the address. A port set here is never changed |
 | `HERDR_SOCKET` | `~/.config/herdr/herdr.sock` | herdr socket for API calls and terminal attach. For a named session, use `~/.config/herdr/sessions/<name>/herdr.sock`. A plugin install follows the socket of the herdr session that starts it; set `HERDR_SOCKET` in the plugin's config to pin another one, and that setting wins. |
 | `OVIS_TOKEN` | unset | Shared token for scripts and proxies. Once set, every client that is not a paired device needs it, this computer and your own Tailscale login included |

@@ -89,6 +89,20 @@ command = ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "autostart", "on"]
 platforms = ["linux", "macos"]
 
 [[actions]]
+id = "network-local"
+title = "Ovis: this PC only"
+contexts = ["workspace"]
+command = ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "network", "local"]
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "network-lan"
+title = "Ovis: local network only"
+contexts = ["workspace"]
+command = ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "network", "lan"]
+platforms = ["linux", "macos"]
+
+[[actions]]
 id = "status-windows"
 title = "Ovis status"
 contexts = ["workspace"]

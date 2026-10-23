@@ -100,6 +100,7 @@ What differs from upstream:
   `~/.config/moo/moo.sock` by default. `HERDR_*` variables and `OVIS_HERDR_BIN` still win when set.
 - Usage counts are **off** unless you set `OVIS_TELEMETRY=1`.
 - `autostart on|off|status` controls whether moo's startup hook starts Ovis.
+- **Network access** (Settings → Phone & devices) chooses who can open it: *This PC only* (the default, listens on `127.0.0.1`) or *Local network*. Local network listens on all interfaces but answers only connections from this PC or a private address (`10/8`, `172.16/12`, `192.168/16`, link-local, IPv6 loopback and unique-local); anything else, including a forwarded port or a public interface, gets a 403. The check uses the connection's own address, not headers. It will not turn on until `OVIS_TOKEN` is set or a device is paired, and it switches immediately without a restart. The same switch is `moo plugin action invoke devswha.ovis.network-lan` / `.network-local`, or `bun scripts/plugin.ts network local|lan|status`. An explicit `HOST` overrides it.
 
 Set it up from a checkout (a linked checkout is not built for you):
 

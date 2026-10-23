@@ -24,6 +24,8 @@ import type {
   TabMoved,
   OmoActivity,
   OpenWorktreeRequest,
+  NetworkMode,
+  NetworkStatus,
   PairedDevice,
   PairingCode,
   PaneDirection,
@@ -408,6 +410,14 @@ export async function pairDevice(code: string, label: string): Promise<void> {
 
 export async function fetchDevices(): Promise<PairedDevice[]> {
   return (await getJson<{ devices: PairedDevice[] }>("/api/devices")).devices;
+}
+
+export async function fetchNetwork(): Promise<NetworkStatus> {
+  return getJson<NetworkStatus>("/api/network");
+}
+
+export async function setNetworkMode(mode: NetworkMode): Promise<NetworkStatus> {
+  return (await sendJson("/api/network", "POST", { mode })).json();
 }
 
 export async function startPairing(): Promise<PairingCode> {
