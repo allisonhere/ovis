@@ -88,6 +88,38 @@ A browser and phone client for [herdr](https://github.com/herdrdev/herdr). Read 
 
 ---
 
+## running under moo
+
+> This is a fork of [devswha/ovis](https://github.com/devswha/ovis) (MIT, copyright devswha) that
+> runs against [moo](https://github.com/allisonhere/moo) instead of herdr. The licence and
+> third-party notices are unchanged.
+
+What differs from upstream:
+
+- It reads the `MOO_*` plugin environment moo provides and drives the `moo` CLI and
+  `~/.config/moo/moo.sock` by default. `HERDR_*` variables and `OVIS_HERDR_BIN` still win when set.
+- Usage counts are **off** unless you set `OVIS_TELEMETRY=1`.
+- `autostart on|off|status` controls whether moo's startup hook starts Ovis.
+
+Set it up from a checkout (a linked checkout is not built for you):
+
+```bash
+bun install && bun run build
+moo plugin link /path/to/this/checkout
+moo plugin action invoke devswha.ovis.start      # start it now
+```
+
+Moo's startup hook then runs `start --startup` on every server start. To stop that without
+unlinking the plugin:
+
+```bash
+moo plugin action invoke devswha.ovis.autostart-off   # and .autostart-on to reverse it
+```
+
+`OVIS_AUTOSTART=0` in the plugin's `env` file does the same. A plain `start` always starts the app.
+With a moo build that has the plugins section, the same actions are in **Settings → plugins**.
+The app listens on `127.0.0.1:7317`; set a token or pair devices before exposing it further.
+
 ## install
 
 ```bash
