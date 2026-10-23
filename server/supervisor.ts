@@ -10,7 +10,8 @@ import { join, resolve } from "node:path";
 import { DEFAULT_PORT } from "../shared/protocol.ts";
 import { readUpdateIpcRequest } from "../shared/update.ts";
 import { defaultStateDir, HANDOVER_EXIT, moveLegacyStateDir, updateStateDir } from "./update-state.ts";
-import { herdrSocketPath } from "./herdr/client.ts";
+import { herdrSocketPath, ping } from "./herdr/client.ts";
+import { HOST_POLL_MS, HostWatch, hostGraceMs, stopsWithHost } from "./host-watch.ts";
 import { acquireOwnerDirectory } from "./owner-guard.ts";
 import { Updater, type Release } from "./updater.ts";
 
@@ -124,6 +125,23 @@ export async function runSupervisor(root = resolve(import.meta.dir, "..")) {
     lock.release();
     process.exit(code);
   }
+  /** As a moo plugin, Ovis ends with the server it serves (server/host-watch.ts). */
+  function watchHost() {
+    const watch = new HostWatch(hostGraceMs(process.env));
+    let probing = false;
+    const timer = setInterval(async () => {
+      if (stopping || probing) return;
+      probing = true;
+      let alive = true;
+      try { await ping(socketPath); } catch { alive = false; } finally { probing = false; }
+      if (!stopping && watch.observe(alive, Date.now())) {
+        console.log("The moo server is gone; stopping Ovis with it.");
+        clearInterval(timer);
+        await shutdown(0);
+      }
+    }, HOST_POLL_MS);
+    timer.unref();
+  }
   process.on("SIGTERM", () => void shutdown(0));
   process.on("SIGINT", () => void shutdown(0));
   try {
@@ -140,6 +158,7 @@ export async function runSupervisor(root = resolve(import.meta.dir, "..")) {
     started.resolve();
     updater.start();
     process.send?.({ type: "supervisor-ready" });
+    if (stopsWithHost(process.env)) watchHost();
     console.log(`Managed updates: ${updater.status.auto_update ? "automatic install" : "automatic checks, install from Settings"}`);
   } catch (error) {
     console.error(error);

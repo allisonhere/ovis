@@ -491,6 +491,8 @@ Each `OVIS_*` variable was called `HERDR_WEB_*` before Ovis took its name (`OVIS
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `HOST` | `127.0.0.1` | Bind address. Use `0.0.0.0` or a LAN address only with `OVIS_TOKEN` set or once a device is paired: until then that address is open to anyone who reaches it (see [Access and safety](#access-and-safety)). When set, it overrides the **Network access** setting (moo build). |
+| `OVIS_STOP_WITH_MOO` | on | moo build, as a moo plugin: Ovis shuts down after the moo server it serves has been unreachable for the grace period. `0` keeps it running without a server. |
+| `OVIS_HOST_GRACE_MS` | `10000` | moo build: how long the moo server may be unreachable before Ovis stops with it. |
 | `PORT` | `7317` | HTTP and WebSocket port. Left unset, the plugin takes the next of 17317, 27317, 37317 and 47317 when 7317 cannot be opened (another program has it, or Windows reserves it for Hyper-V, WSL2 or Docker), keeps that port for later starts, and the installer and the **Ovis status** action print the address. A port set here is never changed |
 | `HERDR_SOCKET` | `~/.config/herdr/herdr.sock` | herdr socket for API calls and terminal attach. For a named session, use `~/.config/herdr/sessions/<name>/herdr.sock`. A plugin install follows the socket of the herdr session that starts it; set `HERDR_SOCKET` in the plugin's config to pin another one, and that setting wins. |
 | `OVIS_TOKEN` | unset | Shared token for scripts and proxies. Once set, every client that is not a paired device needs it, this computer and your own Tailscale login included |
