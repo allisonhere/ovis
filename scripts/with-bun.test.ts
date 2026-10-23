@@ -127,14 +127,16 @@ describe.skipIf(process.platform === "win32")("Unix Bun discovery", () => {
     tool(join(home, ".bun", "bin"), "bun", "1.4.2");
     const commands = ["build", "startup", "actions", "panes"].flatMap(section =>
       manifest[section].filter(entry => entry.platforms?.includes("linux") && entry.command[1] !== "scripts/preflight.sh"
-        && entry.command[0] !== "herdr").map(entry => entry.command));
+        && entry.command[0] !== "moo").map(entry => entry.command));
     expect(commands).toEqual([
       ["sh", "scripts/with-bun.sh", "install"],
       ["sh", "scripts/with-bun.sh", "run", "build"],
-      ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "start"],
+      ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "start", "--startup"],
       ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "start"],
       ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "stop"],
       ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "status"],
+      ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "autostart", "off"],
+      ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "autostart", "on"],
       ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "phone-setup"],
     ]);
     for (const command of commands) {

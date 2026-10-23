@@ -1,3 +1,5 @@
+import { cliSocketEnv, herdrBin } from "./moo-env.ts";
+
 export interface WatchStreamOptions {
   onFrame: (data: string) => void;
   onEnd: () => void;
@@ -79,9 +81,9 @@ export class PaneWatch {
 
   constructor(private readonly options: PaneWatchOptions) {
     this.proc = Bun.spawn(
-      [process.env["OVIS_HERDR_BIN"] || "herdr", "terminal", "session", "observe", options.paneId,
+      [herdrBin(), "terminal", "session", "observe", options.paneId,
         "--cols", String(options.cols), "--rows", String(options.rows)],
-      { stdin: "ignore", stdout: "pipe", stderr: "pipe", env: { ...process.env, HERDR_SOCKET_PATH: options.socketPath } },
+      { stdin: "ignore", stdout: "pipe", stderr: "pipe", env: { ...process.env, ...cliSocketEnv(options.socketPath) } },
     );
     const parser = new WatchStreamParser({
       onFrame: (data) => {

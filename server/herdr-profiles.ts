@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { SshTarget } from "../shared/machines.ts";
 import { validateTarget } from "./machine-security.ts";
+import { herdrBin } from "./moo-env.ts";
 
 /** Saved by the local herdr client; reading its catalog never connects to a host. */
 export interface HerdrMachineProfile {
@@ -50,7 +51,7 @@ export function sameSshSession(a: SshTarget, b: SshTarget): boolean {
 
 export async function readHerdrProfiles(): Promise<HerdrMachineProfile[]> {
   try {
-    const { stdout } = await run(process.env.OVIS_HERDR_BIN || "herdr", ["machine", "list", "--json"], {
+    const { stdout } = await run(herdrBin(), ["machine", "list", "--json"], {
       timeout: 5_000, killSignal: "SIGKILL", maxBuffer: 1024 * 1024, encoding: "utf8", windowsHide: true,
     });
     return parseHerdrProfiles(stdout);

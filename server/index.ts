@@ -726,7 +726,7 @@ if (import.meta.main) {
   console.log(`Ovis listening on http://${instance.hostname}:${instance.port}`);
   const socket = herdrSocketPath();
   void ping(socket).catch(() => {
-    console.error(`herdr is not reachable at ${socket}: start herdr, or set HERDR_SOCKET to its socket (named sessions: ~/.config/herdr/sessions/<name>/herdr.sock).`);
+    console.error(`herdr is not reachable at ${socket}: start moo, or set HERDR_SOCKET to its socket (named sessions: ~/.config/moo/sessions/<name>/moo.sock).`);
   });
   // the state folder is created on first write, so test the nearest folder that exists
   const stateDir = defaultStateDir();

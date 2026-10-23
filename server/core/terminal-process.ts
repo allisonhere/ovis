@@ -7,6 +7,7 @@ import type { HerdrPane, ServerMessage } from "../../shared/protocol.ts";
 import { AttachOutputTail, AttachStartupProbes, isTakeoverExit } from "../attach-output.ts";
 import { HerdrError, herdrSocketPath, paneRead, paneSendText, sessionSnapshot } from "../herdr/client.ts";
 import { MirrorSession } from "../mirror.ts";
+import { cliSocketEnv, herdrBin } from "../moo-env.ts";
 import { ReplayBuffer } from "../output-window.ts";
 import { PtySession } from "../pty/session.ts";
 import { type Client, connectionOf } from "./connections.ts";
@@ -422,7 +423,7 @@ export function createSpawnAttachment({ attachments, retiringAttachments, termin
         };
         relookup();
       };
-      const command = process.env["OVIS_HERDR_BIN"] || "herdr";
+      const command = herdrBin();
       // node-pty reports a command it cannot exec only as a silent exit 1, which reads as an
       // ended attach (#925): look it up on the PATH and from the home directory the sidecar uses.
       if (!Bun.which(command, { PATH: process.env["PATH"] ?? "", cwd: process.env["HOME"] ?? "/" })) {
@@ -432,10 +433,10 @@ export function createSpawnAttachment({ attachments, retiringAttachments, termin
         command,
         // --takeover goes after the id: before it, herdr reads the id as an unknown option
         args: ["terminal", "attach", attachedTerminal, ...(takingOver ? ["--takeover"] : [])],
-        // herdr's CLI reads HERDR_SOCKET_PATH, not HERDR_SOCKET: the stream must reach
+        // the CLI reads HERDR_SOCKET_PATH or MOO_SOCKET_PATH, not HERDR_SOCKET: the stream must reach
         // the same session the RPCs talk to, or a named session's terminals are
         // looked up on the default socket and the attach dies.
-        env: { HERDR_SOCKET_PATH: herdrSocketPath() },
+        env: cliSocketEnv(herdrSocketPath()),
         cols: attachment.cols,
         rows: attachment.rows,
         onData: (data) => {

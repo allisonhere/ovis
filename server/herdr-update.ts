@@ -23,6 +23,7 @@
 import type { HerdrUpdateStatus } from "../shared/update.ts";
 import { herdrSocketPath } from "./herdr/client.ts";
 import { jsonResponse } from "./http.ts";
+import { cliSocketEnv, herdrBin } from "./moo-env.ts";
 import { updateRequestAllowed } from "./update-api.ts";
 
 /** a download of herdr's binary (about 30 MB) on a slow link, then the handoff */
@@ -107,15 +108,14 @@ export class HerdrUpdater {
   private env(): Record<string, string> {
     const env: Record<string, string> = {};
     for (const [name, value] of Object.entries(process.env)) {
-      if (value !== undefined && !name.startsWith("HERDR_")) env[name] = value;
+      if (value !== undefined && !name.startsWith("HERDR_") && !name.startsWith("MOO_")) env[name] = value;
     }
-    env["HERDR_SOCKET_PATH"] = this.options.socketPath ?? herdrSocketPath();
-    return env;
+    return { ...env, ...cliSocketEnv(this.options.socketPath ?? herdrSocketPath()) };
   }
 
   /** `output` is everything herdr printed, for the app to show; `stdout` alone is what a command answers with. */
   private async exec(args: string[], timeoutMs: number): Promise<{ code: number | null; output: string; stdout: string }> {
-    const bin = this.options.bin ?? (process.env["OVIS_HERDR_BIN"] || "herdr");
+    const bin = this.options.bin ?? herdrBin();
     let proc: ReturnType<typeof Bun.spawn>;
     try {
       proc = Bun.spawn([bin, ...args], { stdin: "ignore", stdout: "pipe", stderr: "pipe", env: this.env() });

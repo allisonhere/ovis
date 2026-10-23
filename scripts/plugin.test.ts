@@ -8,7 +8,7 @@ import { herdrStateDir } from "./plugin-state.ts";
 
 /**
  * The plugin's settings files, read by hand the way a headless PC runs `status` or `pair`:
- * no HERDR_PLUGIN_CONFIG_DIR, so the script asks herdr (a fake one here) for the config dir.
+ * no HERDR_PLUGIN_CONFIG_DIR, so the script asks moo (a fake one here) for the config dir.
  */
 
 const ROOT = join(import.meta.dir, "..");
@@ -19,13 +19,13 @@ async function status(): Promise<{ out: string; err: string; exitCode: number }>
   return run("status");
 }
 
-async function run(command: string, extra: Record<string, string | undefined> = {}): Promise<{ out: string; err: string; exitCode: number }> {
+async function run(command: string | string[], extra: Record<string, string | undefined> = {}): Promise<{ out: string; err: string; exitCode: number }> {
   const bin = join(scratch, "bin");
   const env: Record<string, string | undefined> = { ...process.env, PATH: `${bin}:${process.env["PATH"] ?? ""}`, HOME: scratch, HERDR_PLUGIN_STATE_DIR: join(scratch, "state") };
-  for (const key of ["HERDR_PLUGIN_CONFIG_DIR", "PORT", "HOST", "OVIS_TOKEN", "OVIS_STATE_DIR", "XDG_CONFIG_HOME", "XDG_STATE_HOME"]) delete env[key];
+  for (const key of ["HERDR_PLUGIN_CONFIG_DIR", "MOO_BIN_PATH", "MOO_SOCKET_PATH", "MOO_PLUGIN_ROOT", "MOO_PLUGIN_STATE_DIR", "MOO_PLUGIN_CONFIG_DIR", "OVIS_HERDR_BIN", "PORT", "HOST", "OVIS_TOKEN", "OVIS_STATE_DIR", "XDG_CONFIG_HOME", "XDG_STATE_HOME"]) delete env[key];
   Object.assign(env, extra);
   for (const [key, value] of Object.entries(extra)) if (value === undefined) delete env[key];
-  const child = Bun.spawn(["bun", "scripts/plugin.ts", command], { cwd: ROOT, env, stdout: "pipe", stderr: "pipe" });
+  const child = Bun.spawn(["bun", "scripts/plugin.ts", ...[command].flat()], { cwd: ROOT, env, stdout: "pipe", stderr: "pipe" });
   const [out, err, exitCode] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
   return { out, err, exitCode };
 }
@@ -35,7 +35,7 @@ beforeEach(() => {
   configDir = join(scratch, "config");
   mkdirSync(configDir);
   mkdirSync(join(scratch, "bin"));
-  const herdr = join(scratch, "bin", "herdr");
+  const herdr = join(scratch, "bin", "moo");
   writeFileSync(herdr, `#!/bin/sh\n[ "$1 $2" = "plugin config-dir" ] && echo "${configDir}"\n`);
   chmodSync(herdr, 0o755);
 });
@@ -332,5 +332,39 @@ describe("the state dir when run by hand", () => {
     expect(herdrStateDir({}, "darwin", "/h")).toBe(join("/h", ".local", "state", "herdr"));
     expect(herdrStateDir({ LOCALAPPDATA: "C:/L" }, "win32", "/h")).toBe(join("C:/L", "herdr"));
     expect(herdrStateDir({ USERPROFILE: "C:/U" }, "win32", "/h")).toBe(join("C:/U", "AppData", "Local", "herdr"));
+  });
+});
+
+describe("autostart", () => {
+  const marker = () => join(scratch, "state", "autostart-off");
+
+  it("is on until it is turned off, and a marker keeps the startup hook from starting the app", async () => {
+    expect((await run(["autostart", "status"])).out).toContain("autostart on");
+    const off = await run(["autostart", "off"]);
+    expect(off.exitCode, off.err).toBe(0);
+    expect(off.out).toContain("autostart off");
+    expect(existsSync(marker())).toBe(true);
+    const skipped = await run(["start", "--startup"]);
+    expect(skipped.exitCode, skipped.err).toBe(0);
+    expect(skipped.out).toContain("Ovis autostart is off");
+    expect(existsSync(join(scratch, "state", "server.pid"))).toBe(false);
+  });
+
+  it("turns back on", async () => {
+    await run(["autostart", "off"]);
+    const on = await run(["autostart", "on"]);
+    expect(on.out).toContain("autostart on");
+    expect(existsSync(marker())).toBe(false);
+  });
+
+  it("honours OVIS_AUTOSTART=0 without a marker", async () => {
+    const skipped = await run(["start", "--startup"], { OVIS_AUTOSTART: "0" });
+    expect(skipped.out).toContain("autostart is off by OVIS_AUTOSTART");
+    expect(existsSync(marker())).toBe(false);
+  });
+
+  it("rejects an unknown setting", async () => {
+    const bad = await run(["autostart", "maybe"]);
+    expect(bad.exitCode).toBe(2);
   });
 });

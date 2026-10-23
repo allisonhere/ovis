@@ -32,7 +32,7 @@ platforms = ["windows"]
 
 # One-shot per herdr start: brings the bridge up if it is not already answering.
 [[startup]]
-command = ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "start"]
+command = ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "start", "--startup"]
 platforms = ["linux", "macos"]
 
 [[startup]]
@@ -75,6 +75,20 @@ command = ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "status"]
 platforms = ["linux", "macos"]
 
 [[actions]]
+id = "autostart-off"
+title = "Turn Ovis autostart off"
+contexts = ["workspace"]
+command = ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "autostart", "off"]
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "autostart-on"
+title = "Turn Ovis autostart on"
+contexts = ["workspace"]
+command = ["sh", "scripts/with-bun.sh", "scripts/plugin.ts", "autostart", "on"]
+platforms = ["linux", "macos"]
+
+[[actions]]
 id = "status-windows"
 title = "Ovis status"
 contexts = ["workspace"]
@@ -99,12 +113,12 @@ platforms = ["windows"]
 id = "phone"
 title = "Phone setup"
 contexts = ["workspace"]
-command = ["herdr", "plugin", "pane", "open", "--plugin", "devswha.ovis", "--entrypoint", "phone", "--placement", "zoomed", "--focus"]
+command = ["moo", "plugin", "pane", "open", "--plugin", "devswha.ovis", "--entrypoint", "phone", "--placement", "zoomed", "--focus"]
 platforms = ["linux", "macos"]
 
 [[actions]]
 id = "phone-windows"
 title = "Phone setup"
 contexts = ["workspace"]
-command = ["herdr", "plugin", "pane", "open", "--plugin", "devswha.ovis", "--entrypoint", "phone-windows", "--placement", "zoomed", "--focus"]
+command = ["moo", "plugin", "pane", "open", "--plugin", "devswha.ovis", "--entrypoint", "phone-windows", "--placement", "zoomed", "--focus"]
 platforms = ["windows"]

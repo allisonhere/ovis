@@ -21,6 +21,7 @@
  */
 
 import { mergeEnvLayers } from "../server/legacy-env.ts";
+import { adoptMooEnv, herdrBin } from "../server/moo-env.ts";
 import { defaultStateDir } from "../server/update-state.ts";
 import { spawn, spawnSync } from "node:child_process";
 import { appendFileSync, chmodSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -43,6 +44,8 @@ import { descendantProcesses, windowsArgv, windowsProcessTable } from "../server
  * Declared before CONFIG_DIR, whose lookup uses it.
  */
 const ENV_FILES = ["env", ".env"];
+adoptMooEnv(process.env);
+
 const ROOT = resolve(process.env["HERDR_PLUGIN_ROOT"] ?? join(import.meta.dir, ".."));
 /** the dir under its Ovis name, or under the name before the rename while only that one exists */
 function ownDir(parent: string): string {
@@ -82,7 +85,7 @@ const PHONE_AGAIN = platform() === "win32"
  * ask herdr for it, so the PORT, HOST and token the plugin runs with are the ones used.
  */
 function herdrConfigDir(): string | null {
-  const herdr = Bun.which("herdr");
+  const herdr = Bun.which(herdrBin());
   if (herdr === null) return null;
   for (const id of [PLUGIN_ID, LEGACY_PLUGIN_ID]) {
     try {
@@ -312,6 +315,33 @@ async function settlePort(): Promise<"ready" | "running" | "failed"> {
   port = free;
   origin = originOf(port);
   return "ready";
+}
+
+/**
+ * moo's startup hook runs `start --startup` on every server start. `autostart off` leaves a marker
+ * (or set OVIS_AUTOSTART=0) that only that hook honours: a plain `start` always starts the app.
+ */
+const AUTOSTART_OFF_FILE = join(STATE_DIR, "autostart-off");
+
+function autostartOff(): string | null {
+  if (existsSync(AUTOSTART_OFF_FILE)) return `\`autostart off\` (remove it with \`autostart on\`)`;
+  if (["0", "false", "off", "no"].includes((env["OVIS_AUTOSTART"] ?? "").trim().toLowerCase())) return "OVIS_AUTOSTART";
+  return null;
+}
+
+function autostart(setting: string | undefined): number {
+  if (setting === "off") {
+    mkdirSync(STATE_DIR, { recursive: true });
+    writeFileSync(AUTOSTART_OFF_FILE, "");
+  } else if (setting === "on") {
+    rmSync(AUTOSTART_OFF_FILE, { force: true });
+  } else if (setting !== undefined && setting !== "status") {
+    process.stderr.write("usage: bun scripts/plugin.ts autostart [on|off|status]\n");
+    return 2;
+  }
+  const off = autostartOff();
+  process.stdout.write(off === null ? "autostart on: Ovis starts with moo\n" : `autostart off by ${off}: Ovis starts only when asked (\`start\`)\n`);
+  return 0;
 }
 
 async function start(): Promise<number> {
@@ -679,14 +709,18 @@ async function status(): Promise<number> {
 
 if (import.meta.main) {
   const command = process.argv[2] ?? "status";
-  if (command === "start") process.exit(await start());
+  if (command === "start" && process.argv.includes("--startup") && autostartOff() !== null) {
+    process.stdout.write(`Ovis autostart is off by ${autostartOff()}\n`);
+    process.exit(0);
+  } else if (command === "start") process.exit(await start());
+  else if (command === "autostart") process.exit(autostart(process.argv[3]));
   else if (command === "stop") process.exit(await stop());
   else if (command === "status") process.exit(await status());
   else if (command === "pair") process.exit(await pair());
   else if (command === "phone") process.exit(await phone());
   else if (command === "phone-setup") process.exit(await phoneSetup());
   else {
-    process.stderr.write(`usage: bun scripts/plugin.ts <start|stop|status|pair|phone|phone-setup>\n`);
+    process.stderr.write(`usage: bun scripts/plugin.ts <start|stop|status|autostart|pair|phone|phone-setup>\n`);
     process.exit(2);
   }
 }

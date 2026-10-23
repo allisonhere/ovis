@@ -20,11 +20,11 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 const diagnostics = new ConnectionDiagnostics("herdr.rpc");
 let pendingRpcs = 0;
 
-/** herdr's default socket: ~/.config/herdr on Unix, %APPDATA%\herdr on Windows. */
+/** The default socket: ~/.config/moo on Unix, %APPDATA%\moo on Windows. */
 export function herdrSocketPath(): string {
   if (process.env.HERDR_SOCKET) return process.env.HERDR_SOCKET;
-  if (process.platform === "win32") return `${process.env.APPDATA ?? ""}\\herdr\\herdr.sock`;
-  return `${process.env.HOME ?? ""}/.config/herdr/herdr.sock`;
+  if (process.platform === "win32") return `${process.env.APPDATA ?? ""}\\moo\\moo.sock`;
+  return `${process.env.HOME ?? ""}/.config/moo/moo.sock`;
 }
 
 /**

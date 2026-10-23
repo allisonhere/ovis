@@ -4,5 +4,7 @@
  * the OVIS_* names they now go by.
  */
 import { adoptLegacyEnv } from "./legacy-env.ts";
+import { adoptMooEnv } from "./moo-env.ts";
 
 adoptLegacyEnv(process.env);
+adoptMooEnv(process.env);
